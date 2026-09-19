@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>يوتيوب نقي - Pure YouTube</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #151e2e;
+      --accent: #10b981;
+      --text: #f8fafc;
+      --sub: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    header {
+      background-color: var(--card);
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid #243044;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      background: #243044;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn:hover { background: #334155; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: #059669; }
+
+    /* شريط البحث ولصق الروابط */
+    .search-box {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background-color: #0b0f19;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    /* الأقسام */
+    .categories {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 14px 20px;
+      scrollbar-width: none;
+    }
+
+    .chip {
+      background: var(--card);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid #243044;
+      color: var(--sub);
+      transition: 0.15s;
+    }
+    .chip:hover, .chip.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* شبكة الفيديوهات */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background-color: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid #243044;
+      transition: transform 0.15s ease, border-color 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+
+    .thumb {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .thumb img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: filter 0.2s;
+    }
+
+    /* ميزة حجب الصور (غض البصر) - تُكشف بالنقر، وليس بمجرد مرور الفأرة،
+       لأن الكشف بالتحويم (hover) يحدث بالخطأ لمجرد مرور المؤشر */
+    .blur-mode .thumb img {
+      filter: blur(28px);
+    }
+    .blur-mode .thumb.revealed img {
+      filter: blur(0);
+    }
+
+    .card-info {
+      padding: 14px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-channel {
+      font-size: 12px;
+      color: var(--sub);
+    }
+
+    /* مشغل الفيديو النقي */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.94);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .player-box {
+      width: 100%;
+      max-width: 900px;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    iframe {
+      width: 100%;
+      height: 500px;
+      border: none;
+    }
+
+    .empty-msg {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px;
+      color: var(--sub);
+    }
+  </style>
+</head>
+<body class="blur-mode">
+
+  <header>
+    <div class="top-bar">
+      <div class="logo">🛡️ يوتيوب نقي</div>
+      <button class="btn" onclick="toggleBlur()" id="blurBtn">إلغاء حجب الصور</button>
+    </div>
+
+    <!-- شريط البحث السريع أو فتح أي فيديو بلصق رابطه -->
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="ابحث في المحتوى أو الصق رابط فيديو يوتيوب هنا..." onkeypress="if(event.key==='Enter') handleSearch()">
+      <button class="btn btn-accent" onclick="handleSearch()">تشغيل / بحث</button>
+    </div>
+  </header>
+
+  <!-- تصنيفات نقية مدمجة -->
+  <div class="categories" id="categoriesBar">
+    <div class="chip active" data-cat="all" onclick="setCategory('all', this)">🌟 الكل</div>
+    <div class="chip" data-cat="quran" onclick="setCategory('quran', this)">📖 قرآن كريم</div>
+    <div class="chip" data-cat="docs" onclick="setCategory('docs', this)">🌍 وثائقيات علمية</div>
+    <div class="chip" data-cat="tech" onclick="setCategory('tech', this)">💻 برمجة وتقنية</div>
+    <div class="chip" data-cat="podcast" onclick="setCategory('podcast', this)">🎙️ بودكاست نافع</div>
+    <div class="chip" data-cat="history" onclick="setCategory('history', this)">🏛️ تاريخ وحضارة</div>
+    <div class="chip" data-cat="custom" onclick="setCategory('custom', this)">⭐ فيديوهاتي المضافة</div>
+  </div>
+
+  <div class="grid" id="videoGrid"></div>
+
+  <!-- مشغل الفيديو النقي والمعزول -->
+  <div class="modal" id="playerModal">
+    <div class="player-box">
+      <button class="close-btn" onclick="closePlayer()">إغلاق ✕</button>
+      <iframe id="videoPlayer" src="" allowfullscreen allow="autoplay" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
+  </div>
+
+  <script>
+    // قائمة محتوى نقي مدمجة داخل التطبيق لتعمل دون أي سيرفرات
+    // ⚠️ تنبيه: المعرّفان 79201948831 و 89104820192 في قسم "تاريخ وحضارة"
+    // ليسا معرّفات يوتيوب صحيحة (معرّف الفيديو دائماً 11 حرف/رقم كما تراه
+    // في رابط الفيديو بعد v=). أبقيتهما هنا فقط كمكان محجوز، ويجب استبدالهما
+    // بمعرّفات حقيقية من فيديوهات تختارها أنت بنفسك، وإلا فلن تظهر صورهما
+    // المصغّرة ولن تعمل عند التشغيل.
+    const SAFE_LIBRARY = [
+      // قرآن كريم
+      { id: 'vG34S8_q9oI', title: 'تلاوة خاشعة تريح القلوب - سورة الكهف كاملة', channel: 'القرآن الكريم', cat: 'quran' },
+      { id: '0983hbSmst0', title: 'سورة البقرة كاملة لطرد الشياطين وجلب البركة', channel: 'تلاوات خاشعة', cat: 'quran' },
+      { id: '2S_ZNyM_a00', title: 'تلاوة هادئة تساعد على النوم والراحة النفسية', channel: 'سكينة', cat: 'quran' },
+
+      // وثائقيات
+      { id: '7j88Q4W5v0w', title: 'عظمة الكون والمجرات - وثائقي فلكي مذهل', channel: 'علوم وفضاء', cat: 'docs' },
+      { id: 'f_4L2v5u_74', title: 'أسرار المحيطات والكائنات البحرية الغريبة', channel: 'عالم الطبيعة', cat: 'docs' },
+      { id: 'm38T_B2V4U0', title: 'كيف تعمل الخلايا الحية داخل جسم الإنسان؟', channel: 'وثائقيات علمية', cat: 'docs' },
+
+      // برمجة وتقنية
+      { id: 'kUMe1FH4CHE', title: 'تعلم البرمجة من الصفر للمبتدئين - نظرة شاملة', channel: 'عالم التقنية', cat: 'tech' },
+      { id: 'qz0aGYrrlhU', title: 'دورة لغة HTML كاملة في فيديو واحد وبشكل عملي', channel: 'دروس برمجة', cat: 'tech' },
+      { id: '1bmsb8m5W7M', title: 'كيف تحمي خصوصيتك وأجهزتك من الاختراق والتجسس؟', channel: 'أمن المعلومات', cat: 'tech' },
+
+      // بودكاست نافع
+      { id: 'fGq4c42cWFU', title: 'كيف تتخلص من العادات السيئة وتبني الانضباط الذاتي؟', channel: 'بودكاست وعي', cat: 'podcast' },
+      { id: 'jQe2Ew_9m8w', title: 'قوة التركيز في عصر التشتت والإدمان الرقمي', channel: 'تطوير الذات', cat: 'podcast' },
+
+      // تاريخ وحضارة — استبدل المعرّفين التاليين بمعرّفات حقيقية (انظر التنبيه أعلاه)
+      { id: '79201948831', title: 'قصة فتح الأندلس وصعود الحضارة الإسلامية', channel: 'تاريخنا', cat: 'history' },
+      { id: '89104820192', title: 'عصر النهضة العلمية واكتشافات علماء المسلمين', channel: 'حضارة', cat: 'history' }
+    ];
+
+    const STORAGE_KEY = 'pure_yt_custom_videos';
+    let customVideos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let currentCategory = 'all';
+    let blurMode = true;
+
+    // استخراج معرف الفيديو من رابط يوتيوب إذا قام المستخدم بلصقه
+    function extractYouTubeID(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function renderVideos(list) {
+      const grid = document.getElementById('videoGrid');
+      grid.innerHTML = '';
+
+      if (list.length === 0) {
+        grid.innerHTML = '<div class="empty-msg">لا توجد مقاطع في هذا القسم.</div>';
+        return;
+      }
+
+      list.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb">
+            <img src="https://i.ytimg.com/vi/${v.id}/mqdefault.jpg" loading="lazy" alt="غلاف">
+          </div>
+          <div class="card-info">
+            <div class="card-title">${v.title}</div>
+            <div class="card-channel">${v.channel}</div>
+          </div>
+        `;
+        // نقرة على الصورة نفسها = كشف الحجب لحظياً بدل التشغيل مباشرة (تأكيد قبل الكشف)
+        const thumbEl = card.querySelector('.thumb');
+        thumbEl.onclick = (ev) => {
+          if (blurMode && !thumbEl.classList.contains('revealed')) {
+            ev.stopPropagation();
+            thumbEl.classList.add('revealed');
+            return;
+          }
+          openPlayer(v.id);
+        };
+        card.querySelector('.card-info').onclick = () => openPlayer(v.id);
+        grid.appendChild(card);
+      });
+    }
+
+    function getCombinedList() {
+      return [...customVideos, ...SAFE_LIBRARY];
+    }
+
+    // تصحيح: كانت تعتمد على المتغيّر العام (الضمني) event، وهذا يفشل أو
+    // يعطي سلوكاً خاطئاً عند استدعاء الدالة برمجياً (كما تفعل handleSearch)
+    // بدل نقرة مباشرة على أحد الأزرار. الآن تستقبل العنصر المطلوب تفعيله
+    // كوسيط صريح (el)، وإن لم يُمرَّر، تبحث عنه بنفسها عبر data-cat.
+    function setCategory(cat, el) {
+      currentCategory = cat;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+
+      const target = el || document.querySelector(`.chip[data-cat="${cat}"]`);
+      if (target) target.classList.add('active');
+
+      const all = getCombinedList();
+      if (cat === 'all') {
+        renderVideos(all);
+      } else if (cat === 'custom') {
+        renderVideos(customVideos);
+      } else {
+        renderVideos(all.filter(v => v.cat === cat));
+      }
+    }
+
+    function handleSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      // 1. هل المدخل رابط فيديو يوتيوب؟
+      const videoId = extractYouTubeID(query);
+      if (videoId) {
+        // إضافته لمكتبة المستخدم ثم تشغيله
+        const newVideo = {
+          id: videoId,
+          title: 'فيديو مضاف: ' + videoId,
+          channel: 'رابط مباشر',
+          cat: 'custom'
+        };
+        customVideos.unshift(newVideo);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(customVideos));
+        setCategory('custom');
+        document.getElementById('searchInput').value = '';
+        openPlayer(videoId);
+        return;
+      }
+
+      // 2. إذا كان بحثاً عادياً بالكلمات
+      const all = getCombinedList();
+      const filtered = all.filter(v =>
+        v.title.toLowerCase().includes(query.toLowerCase()) ||
+        v.channel.toLowerCase().includes(query.toLowerCase())
+      );
+      renderVideos(filtered);
+    }
+
+    // مشغل بدون إعلانات ولا مقترحات جانبية
+    function openPlayer(id) {
+      const modal = document.getElementById('playerModal');
+      const iframe = document.getElementById('videoPlayer');
+      iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+      modal.style.display = 'flex';
+    }
+
+    function closePlayer() {
+      const modal = document.getElementById('playerModal');
+      const iframe = document.getElementById('videoPlayer');
+      iframe.src = '';
+      modal.style.display = 'none';
+    }
+
+    function toggleBlur() {
+      blurMode = !blurMode;
+      document.body.classList.toggle('blur-mode', blurMode);
+      document.getElementById('blurBtn').innerText = blurMode ? 'إلغاء حجب الصور' : 'تفعيل حجب الصور';
+    }
+
+    // بدء التشغيل
+    renderVideos(getCombinedList());
+  </script>
+</body>
+</html>
